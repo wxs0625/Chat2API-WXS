@@ -65,9 +65,9 @@ const TYPE_ORDER = [
 function parseCommits(range) {
   const fieldSep = String.fromCharCode(31)
   const commitSep = String.fromCharCode(0)
-  const raw = run(
-    `git log ${range} --pretty=format:%H${fieldSep}%s${fieldSep}%b${commitSep}`
-  )
+  // 使用 git 的 %x1F / %x00 转义占位符在“输出时”生成分隔符，
+  // 因为 Node 的 execSync 不允许命令字符串本身包含 null 字节。
+  const raw = run(`git log ${range} --pretty=format:%H%x1F%s%x1F%b%x00`)
   const commits = []
   for (const chunk of raw.split(commitSep)) {
     if (!chunk.trim()) continue
