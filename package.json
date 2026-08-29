@@ -26,7 +26,8 @@
     "build:mac-arm": "npm run build && electron-builder --mac --arm64",
     "build:linux": "npm run build && electron-builder --linux",
     "build:all": "npm run build && electron-builder --win --mac --linux",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.js",
+    "release:auto": "node scripts/auto-release.js"
   },
   "dependencies": {
     "@koa/router": "^15.3.0",
