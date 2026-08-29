@@ -224,9 +224,9 @@ function main() {
     range = `${lastTag.out}..HEAD`
     console.log(`ℹ️  上一个版本 tag: ${lastTag.out}`)
   } else {
-    const root = safeRun('git rev-list --max-parents=0 HEAD').out || 'HEAD'
-    range = root
-    console.log('ℹ️  未找到 tag，将从仓库第一个提交开始统计')
+    // 没有 tag 时统计当前分支全部可达提交（含根提交）
+    range = 'HEAD'
+    console.log('ℹ️  未找到 tag，将统计当前分支全部提交')
   }
 
   const commits = parseCommits(range)
