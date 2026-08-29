@@ -19,7 +19,12 @@ if [ "$OS" = "Darwin" ]; then
     exit 0
 fi
 
-# Linux 系统检查是否有显示服务器
+# Linux 系统检查是否有显示服务器# 若当前 shell 未设置 DISPLAY 但系统存在真实 X 显示（:0），优先使用真实显示，
+# 使窗口能显示在用户桌面上，而不是跑到看不见的虚拟屏
+if [ -z "$DISPLAY" ] && [ -S /tmp/.X11-unix/X0 ]; then
+  echo "检测到真实显示 :0，使用它启动"
+  export DISPLAY=:0
+fi
 if [ -z "$DISPLAY" ]; then
     echo "未检测到显示服务器，使用虚拟显示 (Xvfb)"
     # 使用 xvfb-run 运行
@@ -31,11 +36,6 @@ if [ -z "$DISPLAY" ]; then
         exit 1
     fi
 else
-    # 检查是否以 root 用户运行
-    if [ "$(id -u)" = "0" ]; then
-        echo "检测到以 root 用户运行，使用 --no-sandbox 参数"
-        npx electron-vite dev -- --no-sandbox
-    else
-        npx electron-vite dev
-    fi
+  # 开发环境统一使用 --no-sandbox，避免 chrome-sandbox SUID 权限配置问题
+  npx electron-vite dev -- --no-sandbox
 fi
