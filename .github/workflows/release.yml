@@ -6,26 +6,45 @@ on:
       - 'v*.*.*'
       - 'v*.*.*-*'
 
+permissions:
+  contents: write
+
 jobs:
+  # 先创建唯一 Release，避免并行 job 各自创建导致重复 Release（资产 404 的根因）
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract latest changelog section
+        run: |
+          awk '/^## \[/{if(p)exit; p=1} p{print}' CHANGELOG.md > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+
   release:
+    needs: create-release
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
-      actions: write
 
     strategy:
       matrix:
         include:
+          # 同平台双架构在同一 job 构建，保证 latest*.yml 更新清单完整
           - os: macos-latest
-            arch: arm64
-          - os: macos-latest
-            arch: x64
+            args: --mac --arm64 --x64
           - os: windows-latest
-            arch: x64
+            args: --win --x64
           - os: ubuntu-latest
-            arch: x64
-          - os: ubuntu-latest
-            arch: arm64
+            args: --linux --x64 --arm64
 
     steps:
       - name: Checkout repository
@@ -45,23 +64,10 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Build and Publish (macOS)
-        if: matrix.os == 'macos-latest'
-        run: npx electron-builder --mac --${{ matrix.arch }} --publish=always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
-
-      - name: Build and Publish (Windows)
-        if: matrix.os == 'windows-latest'
-        run: npx electron-builder --win --${{ matrix.arch }} --publish=always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
-
-      - name: Build and Publish (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: npx electron-builder --linux --${{ matrix.arch }} --publish=always
+      # Release 已由 create-release 创建，electron-builder 会追加资产到同一 Release，
+      # 各平台 yml 文件名不同（latest.yml / latest-mac.yml / latest-linux*.yml），互不覆盖
+      - name: Build and Publish
+        run: npx electron-builder ${{ matrix.args }} --publish=always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/
