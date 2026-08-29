@@ -226,10 +226,12 @@
       "maintainer": "Chat2API Team <support@chat2api.com>",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "desktop": {
-        "Name": "Chat2API",
-        "Comment": "统一管理多个 AI 服务提供商",
-        "Categories": "Utility;Network;",
-        "StartupWMClass": "chat2api"
+        "entry": {
+          "Name": "Chat2API",
+          "Comment": "统一管理多个 AI 服务提供商",
+          "Categories": "Utility;Network;",
+          "StartupWMClass": "chat2api"
+        }
       }
     },
     "appImage": {
