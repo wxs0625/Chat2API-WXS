@@ -244,7 +244,8 @@
     "publish": {
       "provider": "github",
       "owner": "wxs0625",
-      "repo": "Chat2API-WXS"
+      "repo": "Chat2API-WXS",
+      "releaseType": "release"
     }
   }
 }
