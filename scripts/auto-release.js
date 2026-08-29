@@ -251,14 +251,14 @@ function main() {
   updateChangelog(entry)
   console.log('📝 已更新 CHANGELOG.md')
 
-  // 5. 更新 package.json 版本号
-  pkg.version = newVersion
-  fs.writeFileSync(PKG_PATH, JSON.stringify(pkg, null, 2) + '\n')
-  console.log(`📦 已更新 package.json version → ${newVersion}`)
+  // 5. 同步更新 package.json 与 package-lock.json 版本号
+  // 使用 npm version 保证 lock 文件同步，否则 CI 中 npm ci 会因版本不一致而失败。
+  run(`npm version ${newVersion} --no-git-tag-version --allow-same-version`)
+  console.log(`📦 已同步 package.json 与 package-lock.json version → ${newVersion}`)
 
   // 6. 提交 + 打 tag + 推送
   console.log('\n--- 正在提交并打 tag ---')
-  run(`git add package.json CHANGELOG.md`)
+  run(`git add package.json package-lock.json CHANGELOG.md`)
   run(`git commit -m "chore: release v${newVersion}"`)
   run(`git tag -a v${newVersion} -m "chore: release v${newVersion}"`)
   console.log(`🏷️  已创建 tag: v${newVersion}`)
