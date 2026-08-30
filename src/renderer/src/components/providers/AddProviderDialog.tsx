@@ -186,6 +186,7 @@ export function AddProviderDialog({
   const { t } = useTranslation()
   const [step, setStep] = useState<1 | 2>(1)
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+  const [step1Tab, setStep1Tab] = useState<'builtin' | 'custom'>('builtin')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedModels, setExpandedModels] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<string>('manual')
@@ -264,6 +265,7 @@ export function AddProviderDialog({
     if (!open) {
       setStep(1)
       setSelectedProvider(null)
+      setStep1Tab('builtin')
       setSearchQuery('')
       setCredentials({})
       setValidationResult({})
@@ -656,12 +658,11 @@ export function AddProviderDialog({
   }
 
   const renderStep1 = () => (
-    <Tabs defaultValue="builtin" className="mt-4">
+    <Tabs value={step1Tab} onValueChange={(v) => setStep1Tab(v as 'builtin' | 'custom')} className="mt-4">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="builtin">{t('providers.builtinProviders')}</TabsTrigger>
-        <TabsTrigger value="custom" disabled className="gap-1">
+        <TabsTrigger value="custom" className="gap-1">
           {t('providers.customProviders')}
-          <span className="text-[10px] text-muted-foreground">({t('providers.customProviderNotSupported')})</span>
         </TabsTrigger>
       </TabsList>
 
@@ -899,8 +900,8 @@ export function AddProviderDialog({
                 {t('common.cancel')}
               </Button>
               <Button
-                onClick={handleNextStep}
-                disabled={!selectedProvider}
+                onClick={step1Tab === 'custom' ? handleCreateCustom : handleNextStep}
+                disabled={step1Tab !== 'custom' && !selectedProvider}
               >
                 {t('common.next')}
                 <ArrowRight className="ml-2 h-4 w-4" />
