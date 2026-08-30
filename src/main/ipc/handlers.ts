@@ -19,6 +19,7 @@ import { proxyStatusManager } from '../proxy/status'
 import { sessionManager } from '../proxy/sessionManager'
 import { TrayManager } from '../tray/TrayManager'
 import { ConfigManager } from '../store/config'
+import { applyAutoStart } from '../lib/autoStart'
 import { generateManagementSecret } from '../proxy/middleware/managementAuth'
 import { UpdaterManager } from '../updater'
 import { DeepSeekAdapter } from '../proxy/adapters/deepseek'
@@ -229,6 +230,11 @@ export async function registerIpcHandlers(mainWindow: BrowserWindow | null): Pro
       updates.autoUpdateModelsIntervalHours !== undefined
     ) {
       applyModelUpdateConfig()
+    }
+
+    // Register/unregister OS-level boot autostart
+    if (updates.autoStart !== undefined) {
+      applyAutoStart(updates.autoStart)
     }
 
     BrowserWindow.getAllWindows().forEach((win) => {

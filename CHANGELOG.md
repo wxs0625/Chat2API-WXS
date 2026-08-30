@@ -2,6 +2,12 @@
 
 本项目的所有重要变更都会记录在此文件中。
 
+## [1.6.2] - 2026-08-30
+
+### 🐛 修复 (Bug Fixes)
+
+- 修复"开机自启"设置不生效：新增操作系统级自启注册（Linux 写入 `~/.config/autostart/chat2api.desktop`，Windows/macOS 使用系统登录项），Linux root 用户自启时自动附加 `--no-sandbox`
+
 ## [1.6.1] - 2026-08-30
 
 ### 🐛 修复 (Bug Fixes)
