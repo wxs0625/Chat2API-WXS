@@ -29,6 +29,15 @@ export interface InAppLoginOptions {
 
 const DEFAULT_TIMEOUT = 300000 // 5 minutes
 const MIN_LOGIN_TIME = 5000 // Minimum time before checking tokens (5 seconds)
+const MAX_LOAD_RETRIES = 3 // Maximum number of retry attempts for page loading
+const LOAD_RETRY_DELAY = 2000 // Delay between retry attempts (ms)
+
+// Common User-Agent string for the in-app login window.
+// Many provider websites reject or block the default Electron User-Agent,
+// causing ERR_CONNECTION_CLOSED or similar errors. Using a standard
+// Chrome User-Agent avoids this.
+const IN_APP_LOGIN_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
 
 export class InAppLoginManager extends EventEmitter {
   private loginWindow: BrowserWindow | null = null
@@ -41,6 +50,7 @@ export class InAppLoginManager extends EventEmitter {
   private loginStartTime: number = 0
   private lastTokenCheckTime: number = 0
   private options: InAppLoginOptions | null = null
+  private loadRetryCount: number = 0
 
   constructor() {
     super()
@@ -67,6 +77,7 @@ export class InAppLoginManager extends EventEmitter {
     this.loginStartTime = Date.now()
     this.lastTokenCheckTime = 0
     this.options = options
+    this.loadRetryCount = 0
 
     return new Promise((resolve) => {
       this.resolvePromise = resolve
@@ -90,6 +101,10 @@ export class InAppLoginManager extends EventEmitter {
 
     const partition = `persist:oauth-${Date.now()}`
     this.loginSession = session.fromPartition(partition)
+
+    // Set a standard Chrome User-Agent on the session to avoid being
+    // blocked by provider websites that reject Electron's default UA.
+    this.loginSession.setUserAgent(IN_APP_LOGIN_UA)
 
     if (this.options?.proxyMode === 'none') {
       this.loginSession.setProxy({ mode: 'direct' }).catch((error) => {
@@ -126,11 +141,93 @@ export class InAppLoginManager extends EventEmitter {
       }
     })
 
+    // Handle page load failures (e.g. ERR_CONNECTION_CLOSED)
+    this.loginWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+      // Ignore sub-frame errors and non-primary frame errors
+      if (this.isCompleted) return
+
+      console.error('[InAppLogin] did-fail-load:', { errorCode, errorDescription, validatedURL })
+
+      // Ignore errors for sub-frames (isMainFrame would be checked via event)
+      // ERR_ABORTED (-3) is usually triggered by navigation during page load
+      // and is not a real error we need to retry.
+      if (errorCode === -3) {
+        console.log('[InAppLogin] Ignoring ERR_ABORTED (-3), likely navigation')
+        return
+      }
+
+      this.loadRetryCount++
+      if (this.loadRetryCount <= MAX_LOAD_RETRIES) {
+        console.log(`[InAppLogin] Retrying page load (attempt ${this.loadRetryCount}/${MAX_LOAD_RETRIES})...`)
+        this.emit('status', {
+          status: 'pending',
+          message: `Connection failed, retrying (${this.loadRetryCount}/${MAX_LOAD_RETRIES})...`,
+        })
+
+        setTimeout(() => {
+          if (this.isCompleted) return
+          if (!this.loginWindow || this.loginWindow.isDestroyed()) return
+
+          this.loginWindow.loadURL(this.config!.loginUrl).catch((error) => {
+            if (this.loadRetryCount >= MAX_LOAD_RETRIES) {
+              this.complete({
+                success: false,
+                error: `Failed to load login page: ${error.message}`,
+              })
+            }
+          })
+        }, LOAD_RETRY_DELAY)
+      } else {
+        this.complete({
+          success: false,
+          error: `Failed to load login page after ${MAX_LOAD_RETRIES} retries: ${errorDescription} (${errorCode})`,
+        })
+      }
+    })
+
+    this.loadUrlWithRetry()
+  }
+
+  /**
+   * Load the login URL with retry on failure
+   */
+  private loadUrlWithRetry(): void {
+    if (!this.config || !this.loginWindow) return
+
     this.loginWindow.loadURL(this.config.loginUrl).catch((error) => {
-      this.complete({
-        success: false,
-        error: `Failed to load login page: ${error.message}`,
-      })
+      // This catch handles synchronous loadURL rejection.
+      // The did-fail-load event handles most connection errors with retry logic.
+      if (this.isCompleted) return
+
+      console.error('[InAppLogin] loadURL rejected:', error.message)
+
+      this.loadRetryCount++
+      if (this.loadRetryCount <= MAX_LOAD_RETRIES) {
+        console.log(`[InAppLogin] Retrying page load (attempt ${this.loadRetryCount}/${MAX_LOAD_RETRIES})...`)
+        this.emit('status', {
+          status: 'pending',
+          message: `Connection failed, retrying (${this.loadRetryCount}/${MAX_LOAD_RETRIES})...`,
+        })
+
+        setTimeout(() => {
+          if (this.isCompleted) return
+          if (!this.loginWindow || this.loginWindow.isDestroyed()) return
+
+          this.loginWindow.loadURL(this.config!.loginUrl).catch((err) => {
+            if (this.loadRetryCount >= MAX_LOAD_RETRIES) {
+              this.complete({
+                success: false,
+                error: `Failed to load login page: ${err.message}`,
+              })
+            }
+          })
+        }, LOAD_RETRY_DELAY)
+      } else {
+        this.complete({
+          success: false,
+          error: `Failed to load login page: ${error.message}`,
+        })
+      }
     })
   }
 
@@ -592,6 +689,7 @@ export class InAppLoginManager extends EventEmitter {
 
     this.loginWindow = null
     this.config = null
+    this.loadRetryCount = 0
   }
 
   cancel(): void {

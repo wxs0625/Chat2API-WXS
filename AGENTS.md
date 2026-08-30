@@ -149,6 +149,20 @@ app.commandLine.appendSwitch('js-flags', '--jitless --no-opt')
 ```
 This trades some performance for stability.
 
+## Linux Root User Sandbox Note
+
+When the app runs as the root user on Linux, Chromium's setuid sandbox is
+unusable (Chromium refuses setuid as root), causing a `SIGTRAP` crash on
+startup. The app automatically detects this and applies `--no-sandbox`:
+```typescript
+if (process.platform === 'linux' && process.getuid() === 0) {
+  app.commandLine.appendSwitch('no-sandbox')
+}
+```
+No external wrapper script or binary renaming is required — the fix is
+baked into the source so every launch entry point (desktop icon, CLI,
+systemd, etc.) benefits automatically.
+
 ## Adding a New Provider
 
 ### Overview

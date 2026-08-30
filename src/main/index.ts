@@ -33,9 +33,18 @@ if (process.platform === 'linux') {
   app.commandLine.appendSwitch('disable-gpu-compositing')
 }
 
-// Automatically add --no-sandbox flag when running as root user
-if (process.getuid && process.getuid() === 0) {
-  console.log('Detected running as root user, sandbox settings have been automatically handled')
+// On Linux, Chromium's sandbox requires a setuid helper (`chrome-sandbox`).
+// When the app is installed system-wide (e.g. /opt/Chat2API) the helper's
+// SUID bit is often lost or the file isn't shipped, causing a SIGTRAP crash
+// on startup. Running as the root user makes this worse because Chromium
+// refuses to use the setuid sandbox as root for security reasons.
+//
+// The robust fix is to disable the sandbox entirely when running as root.
+// This must happen before `app.requestSingleInstanceLock()` / `app.ready`
+// so that the flag is present when the GPU/utility processes are forked.
+if (process.platform === 'linux' && typeof process.getuid === 'function' && process.getuid() === 0) {
+  app.commandLine.appendSwitch('no-sandbox')
+  console.log('[App] Running as root on Linux, --no-sandbox has been applied')
 }
 
 declare module 'electron' {

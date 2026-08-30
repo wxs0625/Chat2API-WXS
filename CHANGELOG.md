@@ -2,6 +2,13 @@
 
 本项目的所有重要变更都会记录在此文件中。
 
+## [Unreleased]
+
+### 🐛 修复 (Bug Fixes)
+
+- 修复 Linux root 用户启动崩溃：检测到 root 时实际调用 `app.commandLine.appendSwitch('no-sandbox')`（之前只打日志未生效）
+- 修复应用内 OAuth 登录窗口加载 `https://chat.z.ai/` 时 `ERR_CONNECTION_CLOSED` 错误：为 BrowserWindow session 设置标准 Chrome User-Agent，并添加自动重试机制（最多 3 次）
+
 ## [1.6.0] - 2026-08-30
 
 ### ✨ 新功能 (Features)
