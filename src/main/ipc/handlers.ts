@@ -89,6 +89,13 @@ export async function registerIpcHandlers(mainWindow: BrowserWindow | null): Pro
 
   // Check if auto-start proxy is needed
   const config = storeManager.getConfig()
+
+  // Idempotently sync OS-level boot autostart registration with the stored setting
+  // (covers configs saved by older versions that never performed the registration)
+  if (config.autoStart) {
+    applyAutoStart(true)
+  }
+
   if (config.autoStartProxy) {
     console.log('[App] Auto-starting proxy service...')
     const proxyPort = config.proxyPort

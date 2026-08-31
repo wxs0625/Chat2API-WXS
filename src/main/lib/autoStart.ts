@@ -52,6 +52,8 @@ function applyLinuxAutoStart(enabled: boolean): void {
   if (enabled) {
     fs.mkdirSync(LINUX_AUTOSTART_DIR, { recursive: true })
     fs.writeFileSync(LINUX_AUTOSTART_FILE, buildDesktopEntry(), 'utf-8')
+    // Some desktop environments ignore autostart entries without the executable bit.
+    fs.chmodSync(LINUX_AUTOSTART_FILE, 0o755)
     console.log('[AutoStart] Linux autostart entry written:', LINUX_AUTOSTART_FILE)
   } else if (fs.existsSync(LINUX_AUTOSTART_FILE)) {
     fs.unlinkSync(LINUX_AUTOSTART_FILE)
