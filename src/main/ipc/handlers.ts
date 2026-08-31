@@ -114,6 +114,7 @@ export async function registerIpcHandlers(mainWindow: BrowserWindow | null): Pro
           connections: 0,
         }
         mainWindow?.webContents.send(IpcChannels.PROXY_STATUS_CHANGED, status)
+        TrayManager.getInstance().updateProxyStatus(true)
       } else {
         proxyServer = null
         console.log('[App] Proxy service auto-start failed')
