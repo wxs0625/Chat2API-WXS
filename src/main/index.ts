@@ -15,6 +15,22 @@ process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', reason)
 })
 
+// On Linux, session shutdown / reboot sends SIGTERM to running applications.
+// Without a handler the main process dies instantly, orphaned Chromium child
+// processes (GPU/zygote/utility) abort, and apport records it as a crash that
+// pops an "application closed unexpectedly" dialog on the next login.
+// Handle termination signals and quit gracefully so children exit cleanly.
+for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP'] as const) {
+  process.on(signal, () => {
+    console.log(`[App] Received ${signal}, quitting gracefully...`)
+    if (app.isReady()) {
+      app.quit()
+    } else {
+      app.exit(0)
+    }
+  })
+}
+
 // Workaround for V8 JIT compiler crash on macOS ARM64 (Electron 33 bug)
 // Completely disable JIT compilation to prevent EXC_BAD_ACCESS crashes
 // This trades some performance for stability
