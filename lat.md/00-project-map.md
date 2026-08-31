@@ -27,6 +27,11 @@ A built-in provider normally touches these files:
 
 The current built-in provider set is DeepSeek, GLM, Kimi, Mimo, MiniMax, Perplexity, Qwen, Qwen AI, and Z.ai.
 
+## OS Integration
+
+- Boot autostart is registered by `src/main/lib/autoStart.ts`: Linux writes `~/.config/autostart/chat2api.desktop` (chmod 755; appends `--no-sandbox` when running as root), Windows/macOS use `app.setLoginItemSettings`. Registration is re-synced idempotently on every app start from the stored `autoStart` config and applied immediately when the settings toggle changes.
+- Linux root startup applies `--no-sandbox` in `src/main/index.ts` (Chromium setuid sandbox is unusable as root).
+
 ## Known Gaps For This Fork
 
 - No Google Gemini chat provider is registered.
