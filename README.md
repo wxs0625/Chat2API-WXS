@@ -270,3 +270,7 @@ This means:
 - [Tailwind CSS](https://tailwindcss.com/) - CSS framework
 - [Zustand](https://zustand-demo.pmnd.rs/) - State management
 - [Koa](https://koajs.com/) - HTTP server
+
+## 🔗 Friends
+
+- [LINUX DO](https://linux.do/) - Where possible begins. (真诚、友善、团结、专业，共建你我引以为荣之社区)

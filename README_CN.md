@@ -270,3 +270,7 @@ GNU 通用公共许可证 v3.0。详见 [LICENSE](LICENSE)。
 - [Tailwind CSS](https://tailwindcss.com/) - CSS 框架
 - [Zustand](https://zustand-demo.pmnd.rs/) - 状态管理
 - [Koa](https://koajs.com/) - HTTP 服务器
+
+## 🔗 友情链接
+
+- [LINUX DO](https://linux.do/) - 真诚、友善、团结、专业，共建你我引以为荣之社区。（Where possible begins）
